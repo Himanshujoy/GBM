@@ -111,13 +111,13 @@ int main()
     auto results = pricer.price_option();
     auto end_clock = chrono::high_resolution_clock::now();
 
-    auto duration = chrono::duration_cast<chrono::milliseconds>(end_clock - start_clock).count();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_clock - start_clock);
     cout<<"Monte Carlo GBM Option Pricing Results:\n";
     cout<<"Price: "<<results.price<<"\n";
     cout<<"Standard Error: "<<results.std_err<<"\n";
     cout<<"95% Confidence Interval: ["<<results.conf_low<<", "<<results.conf_high<<"]\n";
     cout<<"Variance Reduction Ratio: "<<results.var_red_ratio<<"\n";
-    cout<<"Computation Time: "<<duration<<" ms\n";
+    cout<<"Computation Time: "<<duration.count()<<" ms\n";
     cout<<"---------------------------------------\n";
     cout<<"Black-Scholes Price: "; 
     cout<<GBM_MonteCarlo_Pricer::black_scholes_price(100.0, 100.0, 0.05, 0.2, 1.0)<<"\n";
