@@ -29,10 +29,71 @@ class GBM_MonteCarlo_Pricer
             {
                 throw invalid_argument("Invalid Parameters for GBM.");
             }
+
+            drift = (r - 0.5 * sigma * sigma) * T;
+            diffusion = sigma * sqrt(T);
+            discount_factor = exp(-r * T);
         }
+
+        struct PricingResults
+        {
+            double price, std_err, var_red_ratio, conf_low, conf_high;
+        };
+        
+        PricingResults price_option() const
+        {
+            mt19937_64 rng(seed);
+            normal_distribution<double> norm(0.0, 1.0);
+
+            double sum_payoffs = 0.0;
+            double sum_payoffs_sq = 0.0;
+            size_t eff_paths = use_antithetic ? num_paths / 2 : num_paths;
+            
+            for(size_t i = 0; i < eff_paths; i++)
+            {
+                double Z = norm(rng);
+                double ST1 = S0 * exp(drift + diffusion * Z);
+                double payoff1 = max(ST1 - K, 0.0);
+                sum_payoffs += payoff1;
+                sum_payoffs_sq += payoff1 * payoff1;
+
+                if(use_antithetic)
+                {
+                    double ST2 = S0 * exp(drift + diffusion * (-Z));
+                    double payoff2 = max(ST2 - K, 0.0);
+                    double avg_payoff = 0.5 * (payoff1 + payoff2);
+                    sum_payoffs += payoff2;
+                    sum_payoffs_sq += payoff2 * payoff2;
+                }
+            }
+
+            size_t total_paths = use_antithetic ? eff_paths * 2 : eff_paths;
+            double avg_payoff = sum_payoffs / total_paths;
+            double avg_payoff_sq = sum_payoffs_sq / total_paths;
+            double var_payoff = avg_payoff_sq - avg_payoff * avg_payoff;
+            double price = discount_factor * avg_payoff;
+            double std_err = discount_factor * sqrt(var_payoff / total_paths);
+
+            double vr_ratio = 1.0;
+            if(use_antithetic)
+            {
+                double naive_var = var_payoff;
+                vr_ratio = naive_var / (var_payoff / 2.0); // 2 when using antithetic variates otherwise 1
+            }
+
+            return
+            {
+                price,
+                std_err,
+                vr_ratio,
+                price - 1.96 * std_err,
+                price + 1.96 * std_err
+            };
+        }
+        
 };
 
 int main()
 {
-    
+
 }
