@@ -20,9 +20,9 @@ class GBM_MonteCarlo_Pricer
         double drift, diffusion, discount_factor;
 
     public:
-        GBM_MonteCarlo_Pricer(double S0_d, double K_d, double r_d, double T_d, double sigma_d,
+        GBM_MonteCarlo_Pricer(double S0_d, double K_d, double r_d, double sigma_d, double T_d,
                              size_t num_paths_d, bool use_antithetic_d = true, size_t seed_d = random_device{}())
-            : S0(S0_d), K(K_d), r(r_d), T(T_d), sigma(sigma_d), num_paths(num_paths_d),
+            : S0(S0_d), K(K_d), r(r_d), sigma(sigma_d), T(T_d), num_paths(num_paths_d),
               use_antithetic(use_antithetic_d), seed(seed_d)
         {
             if(S0 <= 0.0 || sigma <= 0.0 || T <= 0.0)
@@ -91,6 +91,16 @@ class GBM_MonteCarlo_Pricer
             };
         }
         
+        static double black_scholes_price(double S0, double K, double r, double sigma, double T)
+        {
+            double d1 = (log(S0 / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrt(T));
+            double d2 = d1 - sigma * sqrt(T);
+            auto calc_norm_cdf = [](double x)
+            {
+                return 0.5 * (1.0 + erf(x / sqrt(2.0)));
+            };
+            return S0 * calc_norm_cdf(d1) - K * exp(-r * T) * calc_norm_cdf(d2);
+        }
 };
 
 int main()
